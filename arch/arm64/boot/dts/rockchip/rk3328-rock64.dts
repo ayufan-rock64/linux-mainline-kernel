@@ -17,7 +17,34 @@
 	};
 
 	chosen {
+		bootargs = "earlycon=uart8250,mmio32,0xff130000";
 		stdout-path = "serial2:1500000n8";
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		standby-led {
+			linux,default-trigger = "disk-activity";
+			gpios = <&rk805 0 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
+		power-led {
+			gpios = <&rk805 1 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		usb-switch {
+			linux,default-trigger = "none";
+			gpios = <&gpio0 2 1>;
+			mode = <0x23>;
+			default-state = "on";
+		};
 	};
 
 	gmac_clkin: external-gmac-clock {
@@ -80,22 +107,23 @@
 		};
 	};
 
-	spdif_sound: spdif-sound {
-		compatible = "simple-audio-card";
-		simple-audio-card,name = "SPDIF";
-
-		simple-audio-card,cpu {
-			sound-dai = <&spdif>;
-		};
-
-		simple-audio-card,codec {
-			sound-dai = <&spdif_dit>;
-		};
+	sound {
+		compatible = "audio-graph-card";
+		label = "rockchip,rk3328";
+		dais = <&i2s0_p0
+			&i2s1_p0
+			&spdif_p0>;
 	};
 
 	spdif_dit: spdif-dit {
 		compatible = "linux,spdif-dit";
 		#sound-dai-cells = <0>;
+
+		port {
+			dit_p0_0: endpoint {
+				remote-endpoint = <&spdif_p0_0>;
+			};
+		};
 	};
 };
 
@@ -106,6 +134,12 @@
 &codec {
 	mute-gpios = <&grf_gpio 0 GPIO_ACTIVE_LOW>;
 	status = "okay";
+
+	port@0 {
+		codec_p0_0: endpoint {
+			remote-endpoint = <&i2s1_p0_0>;
+		};
+	};
 };
 
 &cpu0 {
@@ -160,6 +194,12 @@
 	avdd-0v9-supply = <&vdd_10>;
 	avdd-1v8-supply = <&vcc_18>;
 	status = "okay";
+
+	port@0 {
+		hdmi_p0_0: endpoint {
+			remote-endpoint = <&i2s0_p0_0>;
+		};
+	};
 };
 
 &hdmi_sound {
@@ -283,10 +323,26 @@
 
 &i2s0 {
 	status = "okay";
+
+	i2s0_p0: port {
+		i2s0_p0_0: endpoint {
+			dai-format = "i2s";
+			mclk-fs = <256>;
+			remote-endpoint = <&hdmi_p0_0>;
+		};
+	};
 };
 
 &i2s1 {
 	status = "okay";
+
+	i2s1_p0: port {
+		i2s1_p0_0: endpoint {
+			dai-format = "i2s";
+			mclk-fs = <256>;
+			remote-endpoint = <&codec_p0_0>;
+		};
+	};
 };
 
 &io_domains {
@@ -336,18 +392,36 @@
 &spdif {
 	pinctrl-0 = <&spdifm0_tx>;
 	status = "okay";
+
+	spdif_p0: port {
+		spdif_p0_0: endpoint {
+			remote-endpoint = <&dit_p0_0>;
+		};
+	};
 };
 
 &spi0 {
 	status = "okay";
 
 	flash@0 {
-		compatible = "jedec,spi-nor";
+		compatible = "gigadevice,gd25q128", "jedec,spi-nor";
 		reg = <0>;
+		m25p,fast-read;
 
 		/* maximum speed for Rockchip SPI */
 		spi-max-frequency = <50000000>;
 		vcc-supply = <&vcc_io>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			loader@8000 {
+				label = "loader";
+				reg = <0x8000 0x3F0000>;
+			};
+		};
 	};
 };
 
@@ -359,18 +433,21 @@
 
 &uart2 {
 	status = "okay";
+
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
 };
 
 &u2phy {
 	status = "okay";
+};
 
-	u2phy_host: host-port {
-		status = "okay";
-	};
+&u2phy_host {
+	status = "okay";
+};
 
-	u2phy_otg: otg-port {
-		status = "okay";
-	};
+&u2phy_otg {
+	status = "okay";
 };
 
 &usb20_otg {
@@ -391,10 +468,45 @@
 	status = "okay";
 };
 
+&usbdrd3 {
+	status = "okay";
+	dr_mode = "host";
+};
+
 &vop {
 	status = "okay";
 };
 
 &vop_mmu {
 	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+
+	/* SPI DMA does not work currently */
+	/delete-property/ dmas;
+	/delete-property/ #dma-cells;
+	/delete-property/ dma-names;
+
+	 spi-flash@0 {
+		#address-cells = <0x1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0x0>;
+		spi-max-frequency = <25000000>;
+		status = "okay";
+		m25p,fast-read;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			loader@8000 {
+				label = "loader";
+				reg = <0x8000 0x3F0000>;
+			};
+		};
+	};
 };
