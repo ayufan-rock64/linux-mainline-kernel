@@ -210,7 +210,7 @@ cat <<EOF >> debian/control
 
 Package: linux-libc-dev
 Section: devel
-Provides: linux-kernel-headers linux-mainline-headers
+Provides: linux-kernel-headers, linux-mainline-kernel-headers
 Architecture: $debarch
 Description: Linux support headers for userspace development
  This package provides userspaces headers from the Linux kernel.  These headers
