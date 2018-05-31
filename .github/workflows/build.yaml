@@ -1,0 +1,49 @@
+on: [push]
+
+env:
+  RELEASE_START: 1150 # 1150, as this is latest build by GitLab CI
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    container: ayufan/rock64-dockerfiles:bookworm
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Docker binary
+      run: |
+        apt-get -y update
+        apt-get -y install docker.io
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Configure ccache
+      run: |
+        echo "CCACHE_DIR=$PWD/out/ccache" >> $GITHUB_ENV
+        echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
+    - name: Cache Primes
+      id: cache-ccache
+      uses: actions/cache@v4
+      with:
+        path: out/ccache
+        key: ${{ runner.os }}-ccache
+    - name: Reset ccache statistics
+      run: ccache -M 0 -F 0
+    - name: Set release number
+      run: echo "RELEASE=$(($RELEASE_START+$GITHUB_RUN_NUMBER))" >> $GITHUB_ENV
+    - name: Build package
+      run: ./dev-make kernel-package
+    - name: Set release metadata
+      run: |
+        echo "RELEASE_NAME=$(./dev-make version)" >> $GITHUB_ENV
+        echo "RELEASE_INFO=$(./dev-make info)" >> $GITHUB_ENV
+    - name: Release package
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ env.RELEASE_NAME }}
+        name: ${{ env.RELEASE_NAME }}
+        body: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        target_commitish: ${{ github.sha }}
+        draft: true
+        files: ../*${{ env.RELEASE_INFO }}*.deb
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

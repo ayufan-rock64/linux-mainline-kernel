@@ -216,6 +216,7 @@ Build-Depends-Arch: bc, bison, flex,
 Homepage: https://www.kernel.org/
 
 Package: $packagename-${KERNELRELEASE}
+Provides: linux-mainline-image
 Architecture: $debarch
 Description: Linux kernel, version ${KERNELRELEASE}
  This package contains the Linux kernel, modules and corresponding other
@@ -227,7 +228,7 @@ cat <<EOF >> debian/control
 
 Package: linux-libc-dev
 Section: devel
-Provides: linux-kernel-headers
+Provides: linux-kernel-headers, linux-mainline-kernel-headers
 Architecture: $debarch
 Description: Linux support headers for userspace development
  This package provides userspaces headers from the Linux kernel.  These headers
@@ -256,6 +257,7 @@ Package: linux-image-${KERNELRELEASE}-dbg
 Section: debug
 Architecture: $debarch
 Build-Profiles: <!pkg.${sourcename}.nokerneldbg>
+Provides: linux-mainline-image-dbg, linux-mainline-image-rockchip-dbg
 Description: Linux kernel debugging symbols for ${KERNELRELEASE}
  This package will come in handy if you need to debug the kernel. It provides
  all the necessary debug symbols for the kernel and its modules.
