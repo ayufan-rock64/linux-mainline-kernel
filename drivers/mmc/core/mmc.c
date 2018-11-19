@@ -9,7 +9,7 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
+#include <linux/moduleparam.h>
 #include <linux/err.h>
 #include <linux/of.h>
 #include <linux/slab.h>
@@ -63,6 +63,10 @@ static const unsigned int taac_mant[] = {
 			__res |= resp[__off-1] << ((32 - __shft) % 32);	\
 		__res & __mask;						\
 	})
+
+/* Enable / disable command queue support */
+static bool mmc_cmdqueue_support = true;
+core_param(mmc_cmdqueue, mmc_cmdqueue_support, bool, S_IRUGO);
 
 /*
  * Given the decoded CSD structure, decode the raw CID to our CID structure.
@@ -1818,15 +1822,20 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	 */
 	card->ext_csd.cmdq_en = false;
 	if (card->ext_csd.cmdq_support && host->caps2 & MMC_CAP2_CQE) {
-		err = mmc_cmdq_enable(card);
-		if (err && err != -EBADMSG)
-			goto free_card;
-		if (err) {
-			pr_warn("%s: Enabling CMDQ failed\n",
-				mmc_hostname(card->host));
-			card->ext_csd.cmdq_support = false;
-			card->ext_csd.cmdq_depth = 0;
-			err = 0;
+		if (mmc_cmdqueue_support) {
+			err = mmc_cmdq_enable(card);
+			if (err && err != -EBADMSG)
+				 goto free_card;
+			if (err) {
+				pr_warn("%s: Enabling CMDQ failed\n",
+					mmc_hostname(card->host));
+				card->ext_csd.cmdq_support = false;
+				card->ext_csd.cmdq_depth = 0;
+				err = 0;
+			}
+		} else {
+			pr_info("%s: CMDQ support disabled in kernel\n",
+				mmc_hostname(host));
 		}
 	}
 	/*
