@@ -570,7 +570,7 @@
 		clock-names = "mclk";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2s_8ch_mclk>;
-		hp-det-gpio = <&gpio1 RK_PB0 GPIO_ACTIVE_LOW>;
+		hp-det-gpio = <&gpio0 RK_PB0 GPIO_ACTIVE_LOW>;
 	};
 };
 
