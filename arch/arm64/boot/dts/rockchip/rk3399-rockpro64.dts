@@ -59,6 +59,13 @@
 		};
 	};
 
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		fan-supply = <&vcc12v_dcin>;
+		pwms = <&pwm1 0 50000 0>;
+	};
+
 	es8316-sound {
 		status = "okay";
 		compatible = "simple-audio-card";
@@ -698,6 +705,10 @@
 	status = "okay";
 };
 
+&pwm1 {
+	status = "okay";
+};
+
 &pwm2 {
 	status = "okay";
 };
@@ -744,6 +755,16 @@
 	//mmc-hs400-enhanced-strobe;
 	non-removable;
 	status = "okay";
+};
+
+&spi1 {
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+	};
 };
 
 &tcphy0 {
