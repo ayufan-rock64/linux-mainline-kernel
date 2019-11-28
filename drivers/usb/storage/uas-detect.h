@@ -123,6 +123,10 @@ static int uas_use_uas_driver(struct usb_interface *intf,
 	/* ayufan: All WD disk do probably have broken UAS support */
 	if (le16_to_cpu(udev->descriptor.idVendor) == 0x1058)
 		flags |= US_FL_IGNORE_UAS;
+	
+	/* fixes instability of OWC Mercury Elite Pro Dual https://www.owcdigital.com/products/mercury-elite-pro-dual-esata */
+	if (le16_to_cpu(udev->descriptor.idProduct) == 0xa3a6)
+		flags |= US_FL_IGNORE_UAS;
 
 	usb_stor_adjust_quirks(udev, &flags);
 
