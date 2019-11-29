@@ -1733,6 +1733,7 @@ static int tcpm_pd_svdm(struct tcpm_port *port, struct typec_altmode *adev,
 			modep->svid_index++;
 			if (modep->svid_index < modep->nsvids) {
 				u16 svid = modep->svids[modep->svid_index];
+				tcpm_log(port, "More modes available, sending discover");
 				response[0] = VDO(svid, 1, svdm_version, CMD_DISCOVER_MODES);
 				rlen = 1;
 			} else {
@@ -6258,6 +6259,60 @@ err_unregister:
 	return ret;
 }
 
+static int tcpm_fw_get_caps_late(struct tcpm_port *port,
+			    struct fwnode_handle *fwnode)
+{
+	int ret, i;
+	ret = fwnode_property_count_u32(fwnode, "typec-altmodes");
+	if (ret > 0) {
+		u32 *props;
+		if (ret % 4) {
+			dev_err(port->dev, "Length of typec altmode array must be divisible by 4");
+			return -EINVAL;
+		}
+
+		props = devm_kzalloc(port->dev, sizeof(u32) * ret, GFP_KERNEL);
+		if (!props) {
+			dev_err(port->dev, "Failed to allocate memory for altmode properties");
+			return -ENOMEM;
+		}
+
+		if(fwnode_property_read_u32_array(fwnode, "typec-altmodes", props, ret) < 0) {
+			dev_err(port->dev, "Failed to read altmodes from port");
+			return -EINVAL;
+		}
+
+		i = 0;
+		while (ret > 0 && i < ARRAY_SIZE(port->port_altmode)) {
+			struct typec_altmode *alt;
+			struct typec_altmode_desc alt_desc = {
+				.svid = props[i * 4],
+				.mode = props[i * 4 + 1],
+				.vdo  = props[i * 4 + 2],
+				.roles = props[i * 4 + 3],
+			};
+
+
+			tcpm_log(port, "Adding altmode SVID: 0x%04x, mode: %d, vdo: %u, role: %d",
+				alt_desc.svid, alt_desc.mode, alt_desc.vdo, alt_desc.roles);
+			alt = typec_port_register_altmode(port->typec_port,
+							  &alt_desc);
+			if (IS_ERR(alt)) {
+				tcpm_log(port,
+					 "%s: failed to register port alternate mode 0x%x",
+					 dev_name(port->dev), alt_desc.svid);
+				break;
+			}
+			typec_altmode_set_drvdata(alt, port);
+			alt->ops = &tcpm_altmode_ops;
+			port->port_altmode[i] = alt;
+			i++;
+			ret -= 4;
+		}
+	}
+	return 0;
+}
+
 static int tcpm_fw_get_caps(struct tcpm_port *port, struct fwnode_handle *fwnode)
 {
 	struct fwnode_handle *capabilities, *child, *caps = NULL;
@@ -6861,6 +6916,12 @@ struct tcpm_port *tcpm_register_port(struct device *dev, struct tcpc_dev *tcpc)
 				     &tcpm_altmode_ops, port,
 				     port->port_altmode, ALTMODE_DISCOVERY_MAX);
 	port->registered = true;
+
+	err = tcpm_fw_get_caps_late(port, tcpc->fwnode);
+	if (err < 0) {
+		dev_err(dev, "Failed to get altmodes from fwnode");
+		goto out_destroy_wq;
+	}
 
 	mutex_lock(&port->lock);
 	tcpm_init(port);
