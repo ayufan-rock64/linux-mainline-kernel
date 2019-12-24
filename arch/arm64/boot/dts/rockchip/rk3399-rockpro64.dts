@@ -749,13 +749,9 @@
 
 &sdhci {
 	bus-width = <8>;
-<<<<<<< HEAD
 	//mmc-hs400-1_8v;
 	mmc-hs200-1_8v;
 	//mmc-hs400-enhanced-strobe;
-=======
-	mmc-hs200-1_8v;
->>>>>>> 6e815efe19a99a33b16cc720c3d3a727565a4fa1
 	non-removable;
 	status = "okay";
 };
