@@ -83,7 +83,8 @@
 		cooling-levels = <0 100 150 200 255>;
 		#cooling-cells = <2>;
 		fan-supply = <&vcc12v_dcin>;
-		pwms = <&pwm1 0 50000 0>;
+		pwms = <&pwm1 0 10000 0>;
+		cooling-levels = <0 80 170 230>;
 	};
 
 	sdio_pwrseq: sdio-pwrseq {
