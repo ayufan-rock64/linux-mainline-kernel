@@ -97,6 +97,12 @@ static const struct dw_hdmi_mpll_config rockchip_mpll_cfg[] = {
 			{ 0x40f3, 0x0000}
 		},
 	}, {
+		32000000, {
+			{ 0x0072, 0x0001},
+			{ 0x2153, 0x0000},
+			{ 0x40f3, 0x0000}
+		},
+	}, {
 		36000000, {
 			{ 0x00b3, 0x0000},
 			{ 0x2153, 0x0000},
