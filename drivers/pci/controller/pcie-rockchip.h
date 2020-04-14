@@ -318,6 +318,7 @@ struct rockchip_pcie {
 	phys_addr_t msg_bus_addr;
 	bool is_rc;
 	struct resource *mem_res;
+	u32	bus_scan_delay;
 };
 
 static u32 rockchip_pcie_read(struct rockchip_pcie *rockchip, u32 reg)

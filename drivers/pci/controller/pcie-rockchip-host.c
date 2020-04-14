@@ -25,6 +25,9 @@
 #include <linux/mfd/syscon.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/moduleparam.h>
+#include <linux/of_address.h>
+#include <linux/of_device.h>
 #include <linux/of_pci.h>
 #include <linux/pci.h>
 #include <linux/pci_ids.h>
@@ -35,6 +38,9 @@
 
 #include "../pci.h"
 #include "pcie-rockchip.h"
+
+static int bus_scan_delay = -1;
+module_param_named(pcie_rk_bus_scan_delay, bus_scan_delay, int, S_IRUGO);
 
 static void rockchip_pcie_enable_bw_int(struct rockchip_pcie *rockchip)
 {
@@ -930,6 +936,7 @@ static int rockchip_pcie_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct pci_host_bridge *bridge;
 	int err;
+	u32 delay = 0;
 
 	if (!dev->of_node)
 		return -ENODEV;
@@ -1013,6 +1020,18 @@ static int rockchip_pcie_probe(struct platform_device *pdev)
 		goto err_remove_irq_domain;
 
 	rockchip_pcie_enable_interrupts(rockchip);
+
+	/* Prefer command-line param over device tree */
+	if (bus_scan_delay > 0) {
+		delay = bus_scan_delay;
+		dev_info(dev, "wait %u ms (from command-line) before bus scan\n", delay);
+	} else if (rockchip->bus_scan_delay > 0 && bus_scan_delay < 0) {
+		delay = rockchip->bus_scan_delay;
+		dev_info(dev, "wait %u ms (from device tree) before bus scan\n", delay);
+	}
+	if (delay > 0) {
+		msleep(delay);
+	}
 
 	err = pci_host_probe(bridge);
 	if (err < 0)
