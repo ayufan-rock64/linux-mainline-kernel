@@ -934,6 +934,35 @@ static int rockchip_pcie_probe(struct platform_device *pdev)
 	if (!dev->of_node)
 		return -ENODEV;
 
+	/*
+	 * Most rk3399 DTs are missing the 'device_type = "pci"' property,
+	 * potentially leading to PCIe probing failure. Be kind to the
+	 * users and fix it up for them. Upgrading is recommended.
+	 */
+	if (!of_find_property(dev->of_node, "device_type", NULL)) {
+		const char dtype[] = "pci";
+		struct property *prop;
+
+		dev_warn(dev, "Working around missing device_type property\n");
+
+		prop = kzalloc(sizeof(*prop), GFP_KERNEL);
+		if (!prop)
+			return -ENOMEM;
+
+		prop->name	= kstrdup("device_type", GFP_KERNEL);
+		prop->value	= kstrdup(dtype, GFP_KERNEL);
+		prop->length	= ARRAY_SIZE(dtype);
+		if (!prop->name || !prop->value) {
+			kfree(prop->name);
+			kfree(prop->value);
+			kfree(prop);
+			return -ENOMEM;
+		}
+
+		if (of_add_property(dev->of_node, prop))
+			dev_warn(dev, "Failed to add property, probing may fail");
+	}
+
 	bridge = devm_pci_alloc_host_bridge(dev, sizeof(*rockchip));
 	if (!bridge)
 		return -ENOMEM;
