@@ -6,6 +6,7 @@
 
 #include <dt-bindings/input/linux-event-codes.h>
 #include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/usb/pd.h>
 #include "rk3399.dtsi"
 #include "rk3399-opp.dtsi"
 
@@ -240,6 +241,11 @@
 		regulator-min-microvolt = <800000>;
 		regulator-max-microvolt = <1700000>;
 	};
+};
+
+&cdn_dp {
+	status = "okay";
+	extcon = <&fusb0>;
 };
 
 &cpu_l0 {
@@ -580,6 +586,54 @@
 		pinctrl-0 = <&fusb0_int>;
 		vbus-supply = <&vcc5v0_typec>;
 		status = "okay";
+
+		connector {
+			compatible = "usb-c-connector";
+			data-role = "host";
+			label = "USB-C";
+			op-sink-microwatt = <1000000>;
+			power-role = "dual";
+			sink-pdos =
+				<PDO_FIXED(5000, 2500, PDO_FIXED_USB_COMM)>;
+			source-pdos =
+				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
+			try-power-role = "sink";
+
+			extcon-cables = <1 2 5 6 9 10 12 44>;
+			typec-altmodes = <0xff01 1 0x001c0c00 1>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+
+					usbc_hs: endpoint {
+						remote-endpoint =
+							<&u2phy0_typec_hs>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+
+					usbc_ss: endpoint {
+						remote-endpoint =
+							<&tcphy0_typec_ss>;
+					};
+				};
+
+				port@2 {
+					reg = <2>;
+
+					usbc_dp: endpoint {
+						remote-endpoint =
+							<&tcphy0_typec_dp>;
+					};
+				};
+			};
+		};
 	};
 
 	/* enable for pine64 touch screen support */
