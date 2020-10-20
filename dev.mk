@@ -48,6 +48,12 @@ kernel-image-and-modules: .config .scmversion
 kernel-package: .config .scmversion
 	KDEB_PKGVERSION=$(KDEB_PKGVERSION) $(KERNEL_MAKE) bindeb-pkg -j$$(nproc)
 
+.PHONY: kernel-update-modules
+kernel-update-modules: .config .scmversion
+	$(KERNEL_MAKE) modules -j$$(nproc)
+	$(KERNEL_MAKE) modules_install INSTALL_MOD_PATH=$(CURDIR)/out/linux_modules
+	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) root@$(REMOTE_HOST):$(REMOTE_DIR)/lib/modules
+
 .PHONY: kernel-update-dts
 kernel-update-dts: .config .scmversion
 	$(KERNEL_MAKE) dtbs -j$$(nproc)
@@ -57,4 +63,4 @@ kernel-update-dts: .config .scmversion
 kernel-update-image: .scmversion
 	rsync --partial --checksum -rv arch/arm64/boot/Image root@$(REMOTE_HOST):$(REMOTE_DIR)/boot/vmlinuz-$(KERNEL_RELEASE)
 	rsync --partial --checksum --include="*.dtb" -rv arch/arm64/boot/dts/rockchip root@$(REMOTE_HOST):$(REMOTE_DIR)/boot/dtbs/$(KERNEL_RELEASE)
-	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) root@$(REMOTE_HOST):$(REMOTE_DIR)/lib/modules/$(KERNEL_RELEASE)
+	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) root@$(REMOTE_HOST):$(REMOTE_DIR)/lib/modules
