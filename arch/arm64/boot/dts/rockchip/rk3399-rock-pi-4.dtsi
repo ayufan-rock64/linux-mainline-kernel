@@ -106,6 +106,8 @@
 
 	vcc3v3_pcie: vcc3v3-pcie-regulator {
 		compatible = "regulator-fixed";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
 		enable-active-high;
 		gpio = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
@@ -571,6 +573,10 @@
 	};
 
 	pcie {
+		pcie_perst: pcie-perst {
+			rockchip,pins = <2 RK_PD4 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
 		pcie_pwr_en: pcie-pwr-en {
 			rockchip,pins = <2 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
