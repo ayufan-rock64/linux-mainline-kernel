@@ -9,6 +9,8 @@
  */
 
 #include <linux/delay.h>
+#include <linux/extcon.h>
+#include <linux/extcon-provider.h>
 #include <linux/mutex.h>
 #include <linux/module.h>
 #include <linux/property.h>
@@ -201,11 +203,58 @@ static int dp_altmode_status_update(struct dp_altmode *dp)
 	return ret;
 }
 
+static void dp_altmode_update_extcon(struct dp_altmode *dp, bool disconnect) {
+	const struct device *dev = &dp->port->dev;
+	struct extcon_dev* edev = NULL;
+
+	while (dev) {
+		edev = extcon_find_edev_by_node(dev->of_node);
+		if(!IS_ERR(edev)) {
+			break;
+		}
+		dev = dev->parent;
+	}
+
+	if (IS_ERR_OR_NULL(edev)) {
+		return;
+	}
+
+	if (disconnect || !dp->data.conf) {
+		extcon_set_state_sync(edev, EXTCON_DISP_DP, false);
+	} else {
+		union extcon_property_value extcon_true = { .intval = true };
+		extcon_set_state(edev, EXTCON_DISP_DP, true);
+		if (DP_CONF_GET_PIN_ASSIGN(dp->data.conf) & DP_PIN_ASSIGN_MULTI_FUNC_MASK) {
+			extcon_set_state_sync(edev, EXTCON_USB_HOST, true);
+			extcon_set_property(edev, EXTCON_DISP_DP, EXTCON_PROP_USB_SS,
+						 extcon_true);
+		} else {
+			extcon_set_state_sync(edev, EXTCON_USB_HOST, false);
+		}
+		extcon_sync(edev, EXTCON_DISP_DP);
+		extcon_set_state_sync(edev, EXTCON_USB, false);
+	}
+
+}
+
 static int dp_altmode_configured(struct dp_altmode *dp)
 {
 	int ret;
 
 	sysfs_notify(&dp->alt->dev.kobj, "displayport", "configuration");
+
+	if (!dp->data.conf) {
+		dp_altmode_update_extcon(dp, true);
+		return typec_altmode_notify(dp->alt, TYPEC_STATE_USB,
+					    &dp->data);
+	}
+
+	dp_altmode_update_extcon(dp, false);
+
+	ret = dp_altmode_notify(dp);
+	if (ret)
+		return ret;
+
 	sysfs_notify(&dp->alt->dev.kobj, "displayport", "pin_assignment");
 	/*
 	 * If the DFP_D/UFP_D sends a change in HPD when first notifying the
@@ -224,7 +273,7 @@ static int dp_altmode_configured(struct dp_altmode *dp)
 		}
 	}
 
-	return dp_altmode_notify(dp);
+	return 0;
 }
 
 static int dp_altmode_configure_vdm(struct dp_altmode *dp, u32 conf)
@@ -245,8 +294,15 @@ static int dp_altmode_configure_vdm(struct dp_altmode *dp, u32 conf)
 	}
 
 	ret = typec_altmode_vdm(dp->alt, header, &conf, 2);
-	if (ret)
-		dp_altmode_notify(dp);
+	if (ret) {
+		if (DP_CONF_GET_PIN_ASSIGN(dp->data.conf))
+			dp_altmode_notify(dp);
+		else {
+			dp_altmode_update_extcon(dp, true);
+			typec_altmode_notify(dp->alt, TYPEC_STATE_USB,
+					     &dp->data);
+		}
+	}
 
 	return ret;
 }
@@ -324,6 +380,8 @@ static void dp_altmode_work(struct work_struct *work)
 	case DP_STATE_EXIT:
 		if (typec_altmode_exit(dp->alt))
 			dev_err(&dp->alt->dev, "Exit Mode Failed!\n");
+		else
+			dp_altmode_update_extcon(dp, true);
 		break;
 	case DP_STATE_EXIT_PRIME:
 		if (typec_cable_altmode_exit(dp->plug_prime, TYPEC_PLUG_SOP_P))
