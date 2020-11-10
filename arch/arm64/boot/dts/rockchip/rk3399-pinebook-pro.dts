@@ -29,6 +29,11 @@
 		stdout-path = "serial2:1500000n8";
 	};
 
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x00200000 0x0 0xf7e00000>;
+	};
+
 	backlight: edp-backlight {
 		compatible = "pwm-backlight";
 		power-supply = <&vcc_12v>;
@@ -127,6 +132,12 @@
 
 		/* WL_REG_ON on module */
 		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
+	};
+
+	/* first 128k(0xff8d0000~0xff8f0000) for ddr and ATF */
+	sram@ff8d0000 {
+		compatible = "mmio-sram";
+		reg = <0x0 0xff8d0000 0x0 0x20000>; /* 128k */
 	};
 
 	/* Audio components */
@@ -374,6 +385,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&dc_det_pin>;
 	};
+};
+
+&cdn_dp {
+	status = "okay";
+	extcon = <&fusb0>;
 };
 
 &cpu_b0 {
@@ -706,6 +722,9 @@
 				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
 			try-power-role = "sink";
 
+			extcon-cables = <1 2 5 6 9 10 12 44>;
+			typec-altmodes = <0xff01 1 0x001c0c00 1>;
+
 			ports {
 				#address-cells = <1>;
 				#size-cells = <0>;
@@ -972,6 +991,7 @@
 };
 
 &tcphy0 {
+	extcon = <&fusb0>;
 	status = "okay";
 };
 

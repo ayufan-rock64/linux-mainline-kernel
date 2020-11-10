@@ -345,6 +345,9 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 				goto undo;
 			}
 		} else {
+			int flags = GPIOF_IN;
+			if (gpios[i].invert)
+				flags |= GPIOF_ACTIVE_LOW;
 			/* legacy GPIO number */
 			if (!gpio_is_valid(gpios[i].gpio)) {
 				dev_err(jack->card->dev,
@@ -354,7 +357,7 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 				goto undo;
 			}
 
-			ret = gpio_request_one(gpios[i].gpio, GPIOF_IN,
+			ret = gpio_request_one(gpios[i].gpio, flags,
 					       gpios[i].name);
 			if (ret)
 				goto undo;
