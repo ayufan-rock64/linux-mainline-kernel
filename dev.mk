@@ -48,19 +48,21 @@ kernel-image-and-modules: .config .scmversion
 kernel-package: .config .scmversion
 	KDEB_PKGVERSION=$(KDEB_PKGVERSION) $(KERNEL_MAKE) bindeb-pkg -j$$(nproc)
 
+REMOTE_DIR ?= root@$(REMOTE_HOST):
+
 .PHONY: kernel-update-modules
 kernel-update-modules: .config .scmversion
 	$(KERNEL_MAKE) modules -j$$(nproc)
 	$(KERNEL_MAKE) modules_install INSTALL_MOD_PATH=$(CURDIR)/out/linux_modules
-	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) root@$(REMOTE_HOST):$(REMOTE_DIR)/lib/modules
+	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) $(REMOTE_DIR)/lib/modules
 
 .PHONY: kernel-update-dts
 kernel-update-dts: .config .scmversion
 	$(KERNEL_MAKE) dtbs -j$$(nproc)
-	rsync --partial --checksum --include="*.dtb" -rv arch/arm64/boot/dts/rockchip root@$(REMOTE_HOST):$(REMOTE_DIR)/boot/dtbs/$(KERNEL_RELEASE)
+	rsync --partial --checksum --include="*.dtb" -rv arch/arm64/boot/dts/rockchip $(REMOTE_DIR)/boot/dtbs/$(KERNEL_RELEASE)
 
 .PHONY: kernel-update
 kernel-update-image: .scmversion
-	rsync --partial --checksum -rv arch/arm64/boot/Image root@$(REMOTE_HOST):$(REMOTE_DIR)/boot/vmlinuz-$(KERNEL_RELEASE)
-	rsync --partial --checksum --include="*.dtb" -rv arch/arm64/boot/dts/rockchip root@$(REMOTE_HOST):$(REMOTE_DIR)/boot/dtbs/$(KERNEL_RELEASE)
-	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) root@$(REMOTE_HOST):$(REMOTE_DIR)/lib/modules
+	rsync --partial --checksum -rv arch/arm64/boot/Image $(REMOTE_DIR)/boot/vmlinuz-$(KERNEL_RELEASE)
+	rsync --partial --checksum --include="*.dtb" -rv arch/arm64/boot/dts/rockchip $(REMOTE_DIR)/boot/dtbs/$(KERNEL_RELEASE)
+	rsync --partial --checksum -av out/linux_modules/lib/modules/$(KERNEL_RELEASE) $(REMOTE_DIR)/lib/modules
