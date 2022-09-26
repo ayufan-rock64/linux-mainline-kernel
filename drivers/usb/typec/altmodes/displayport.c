@@ -204,6 +204,8 @@ static void dp_altmode_update_extcon(struct dp_altmode *dp, bool disconnect) {
 
 static int dp_altmode_configured(struct dp_altmode *dp)
 {
+	int ret;
+
 	sysfs_notify(&dp->alt->dev.kobj, "displayport", "configuration");
 
 	if (!dp->data.conf) {
