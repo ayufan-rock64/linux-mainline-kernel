@@ -2,7 +2,6 @@ on: [push]
 
 env:
   RELEASE_START: 1150 # 1150, as this is latest build by GitLab CI
-  CCACHE_DIR: $RUNNER_TEMP/ccache
 
 jobs:
   build:
@@ -17,6 +16,8 @@ jobs:
         apt-get -y install docker.io
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
+    - name: Configure ccache
+      run: echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> $GITHUB_ENV
     - name: Reset ccache statistics
       run: ccache -M 0 -F 0
     - name: Build package
