@@ -36,16 +36,7 @@
 
 static const bool verify_fast_training;
 
-static bool enable_psr = true;
-module_param(enable_psr, bool, 0644);
-MODULE_PARM_DESC(enable_psr, "PSR support (1 = enabled (default), 0 = disabled)");
-
-struct bridge_init {
-	struct i2c_client *client;
-	struct device_node *node;
-};
-
-static int analogix_dp_init_dp(struct analogix_dp_device *dp)
+static void analogix_dp_init_dp(struct analogix_dp_device *dp)
 {
 	analogix_dp_reset(dp);
 
@@ -885,7 +876,7 @@ static int analogix_dp_commit(struct analogix_dp_device *dp)
 	if (ret)
 		return ret;
 
-	if (enable_psr && analogix_dp_detect_sink_psr(dp)) {
+	if (analogix_dp_detect_sink_psr(dp)) {
 		ret = analogix_dp_enable_sink_psr(dp);
 		if (ret)
 			return ret;
