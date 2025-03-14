@@ -17,7 +17,9 @@ jobs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Configure ccache
-      run: echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> $GITHUB_ENV
+      run: |
+        echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> $GITHUB_ENV
+        echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
     - name: Reset ccache statistics
       run: ccache -M 0 -F 0
     - name: Build package
