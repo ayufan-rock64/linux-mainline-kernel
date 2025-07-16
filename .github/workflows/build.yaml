@@ -5,7 +5,7 @@ env:
 
 jobs:
   build:
-    runs-on: [self-hosted, Linux, ARM64]
+    runs-on: ubuntu-24.04-arm
     container: ayufan/rock64-dockerfiles:bookworm
     steps:
     - name: Checkout
@@ -18,8 +18,14 @@ jobs:
       uses: docker/setup-qemu-action@v2
     - name: Configure ccache
       run: |
-        echo "CCACHE_DIR=$RUNNER_TEMP/ccache" >> $GITHUB_ENV
+        echo "CCACHE_DIR=$PWD/out/ccache" >> $GITHUB_ENV
         echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
+    - name: Cache Primes
+      id: cache-ccache
+      uses: actions/cache@v4
+      with:
+        path: out/ccache
+        key: ${{ runner.os }}-ccache
     - name: Reset ccache statistics
       run: ccache -M 0 -F 0
     - name: Build package
