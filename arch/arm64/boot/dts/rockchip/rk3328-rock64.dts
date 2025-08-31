@@ -72,8 +72,6 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&usb20_host_drv>;
 		regulator-name = "vcc_host_5v";
-		regulator-always-on;
-		regulator-boot-on;
 		vin-supply = <&vcc_sys>;
 	};
 
@@ -454,6 +452,7 @@
 &usbdrd3 {
 	dr_mode = "host";
 	status = "okay";
+	vbus-supply = <&vcc_otg_5v>;
 };
 
 &usb_host0_ehci {
@@ -464,10 +463,6 @@
 	status = "okay";
 };
 
-&usbdrd3 {
-	status = "okay";
-	dr_mode = "host";
-};
 
 &vop {
 	status = "okay";
