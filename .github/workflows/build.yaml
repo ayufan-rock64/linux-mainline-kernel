@@ -3,6 +3,9 @@ on: [push]
 env:
   RELEASE_START: 1150 # 1150, as this is latest build by GitLab CI
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
@@ -43,7 +46,6 @@ jobs:
         name: ${{ env.RELEASE_NAME }}
         body: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         target_commitish: ${{ github.sha }}
-        draft: true
         files: ../*${{ env.RELEASE_INFO }}*.deb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
